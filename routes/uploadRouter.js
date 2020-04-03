@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const authentic = require('../authentic');
+const cors = require('./cors');
 
 const storage = multer.diskStorage({
 	destination: (req, file, cb) => {
@@ -26,20 +27,21 @@ const uploadRouter = express.Router();
 uploadRouter.use(bodyParser.json());
 
 uploadRouter.route('/')
-	.get(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
+	.options(cors.corsWithOptions, (req, res) => res.sendStatus(200))
+	.get(cors.cors, authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
 		res.statusCode = 403;
 		res.send('Get operation not allowed');
 	})
-	.post(authentic.verifyUser, authentic.verifyAdmin, upload.single('imageFile'), (req, res) => {
+	.post(cors.corsWithOptions, authentic.verifyUser, authentic.verifyAdmin, upload.single('imageFile'), (req, res) => {
 		res.statusCode = 200;
 		res.setHeader('Content-Type', 'application/json');
 		res.json(req.file)
 	})
-	.put(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
+	.put(cors.corsWithOptions, authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
 		res.statusCode = 403;
 		res.send('Put operation not allowed');
 	})
-	.delete(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
+	.delete(cors.corsWithOptions, authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
 		res.statusCode = 403;
 		res.send('Delete operation  not allowed');
 	})
