@@ -2,15 +2,22 @@ var express = require('express');
 const bodyParser = require('body-parser');
 const passport = require('passport')
 const User = require('../models/user');
-const authenticate = require('../authentic');
+const authentic = require('../authentic');
 
 var router = express.Router();
 router.use(bodyParser.json());
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
-});
+
+router.route('/')
+    .get(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
+        User.find({})
+            .then((users) => {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.json(users);
+            }, (err) => next(err))
+            .catch((err) => next(err));
+	})
 
 router.post('/signup', (req, res, next) => {
 	User.register(new User({username: req.body.username}), req.body.password, (err, user) => {
@@ -44,7 +51,7 @@ router.post('/signup', (req, res, next) => {
 
 router.post('/login', passport.authenticate('local'), (req, res) => {
 
-	const token = authenticate.getToken({_id: req.user._id});
+	const token = authentic.getToken({_id: req.user._id});
 
 	res.statusCode = 200;
 	res.setHeader('Content-Type', 'application/json');

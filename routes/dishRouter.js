@@ -16,7 +16,7 @@ dishRouter.route('/')
             }, (err) => next(err))
             .catch((err) => next(err));
     })
-    .post(authentic.verifyUser, (req, res, next) => {
+    .post(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
         Dishes.create(req.body)
             .then((dish) => {
                 console.log('Dish created', dish);
@@ -26,10 +26,10 @@ dishRouter.route('/')
             }, (err) => next(err))
             .catch((err) => next(err));
     })
-    .put(authentic.verifyUser, (req, res, next) => {
+    .put(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
         res.send('Put operation not supported on /dishes');
-    }).delete(authentic.verifyUser, (req, res, next) => {
+    }).delete(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
         Dishes.remove({})
             .then((resp) => {
                 res.statusCode = 200;
@@ -48,10 +48,10 @@ dishRouter.route('/:dishId')
                 res.json(dish);
             }, (err) => next(err))
             .catch((err) => next(err));
-    }).post(authentic.verifyUser, (req, res, next) => {
+    }).post(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
         res.statusCode = 403;
         res.send('POST operation not supported on /dishes/' + req.params.dishId);
-    }).put(authentic.verifyUser, (req, res, next) => {
+    }).put(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
         Dishes.findByIdAndUpdate(req.params.dishId, {
             $set: req.body
         }, { new: true })
@@ -61,7 +61,7 @@ dishRouter.route('/:dishId')
                 res.json(dish);
             }, (err) => next(err))
             .catch((err) => next(err));
-    }).delete(authentic.verifyUser, (req, res, next) => {
+    }).delete(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
         Dishes.findByIdAndRemove(req.params.dishId)
             .then((resp) => {
                 res.statusCode = 200;
@@ -116,7 +116,7 @@ dishRouter.route('/:dishId/comments')
 .put(authentic.verifyUser, (req, res, next) => {
     res.statusCode = 403;
     res.send('Put operation not supported on /dishes/' + req.params.dishId + '/comments');
-}).delete(authentic.verifyUser, (req, res, next) => {
+}).delete(authentic.verifyUser, authentic.verifyAdmin, (req, res, next) => {
     Dishes.findById(req.params.dishId)
         .then((dish) => {
             if(dish !== null) {
@@ -164,6 +164,11 @@ dishRouter.route('/:dishId/comments/:commentId')
     Dishes.findById(req.params.dishId)
         .then((dish) => {
             if(dish !== null && dish.comments.id(req.params.commentId) !== null) {
+                if(!dish.comments.id(req.params.commentId).author._id.equals(req.user._id)) {
+                    err = new Error('Comment ' + req.params.commentId + ' not yours. So you can not edit it');
+                    res.statusCode = 404;
+                    return next(err);
+                }
                 if(req.body.rating) {
                     dish.comments.id(req.params.commentId).rating = req.body.rating;
                 }
@@ -195,6 +200,11 @@ dishRouter.route('/:dishId/comments/:commentId')
     Dishes.findById(req.params.dishId)
     .then((dish) => {
         if(dish !== null && dish.comments.id(req.params.commentId) !== null) {
+            if(!dish.comments.id(req.params.commentId).author._id.equals(req.user._id)) {
+                err = new Error('Comment ' + req.params.commentId + ' not yours. So you can not delete it');
+                res.statusCode = 404;
+                return next(err);
+            }
             dish.comments.id(req.params.commentId).remove();
             dish.save()
                 .then((dish) => {
