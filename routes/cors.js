@@ -5,6 +5,7 @@ const app = express();
 const whitelist = [
 	'http://localhost:3000',
 	'https://localhost:3443',
+	'http://localhost:3001',
 ];
 
 const corcOptionsDelegate = (req, callback) => {
